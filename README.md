@@ -2,7 +2,7 @@
 
 A 3D physics simulation of Fuel and the Hub for the 2026 FRC game Rebuilt.
 
-## Installation
+# Installation
 
 1. Install Python
 
