@@ -31,19 +31,19 @@ class RebuiltHubSimuation:
                  show_gui: bool = True):
         self.base_path = base_path
         self.experiment_name = experiment_name
+        self.base_asset_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "assets")
 
         self.physicsClient = p.connect(p.GUI if show_gui else p.DIRECT)
-        p.setAdditionalSearchPath(pybullet_data.getDataPath())  # optionally
+        p.setAdditionalSearchPath(pybullet_data.getDataPath())
+
         p.setRealTimeSimulation(0)
         p.setGravity(0, 0, -9.80665)
 
-        base_asset_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), "assets")
-
-        planeId = p.loadURDF(os.path.join(base_asset_path, "plane.urdf"))
+        planeId = p.loadURDF("plane.urdf")
         p.changeDynamics(planeId, -1, lateralFriction=1.0, restitution=1.0)
 
-        mesh_path = os.path.join(base_asset_path, "hub.obj")
+        mesh_path = os.path.join(self.base_asset_path, "hub.obj")
         collision_shape_id = p.createCollisionShape(
             shapeType=p.GEOM_MESH,
             fileName=mesh_path,
@@ -179,8 +179,8 @@ class RebuiltHubSimuation:
             startVelocity * np.sin(fuel.target_pitch),
         ]
 
-        id = p.loadURDF("fuel.urdf", startPos,
-                        p.getQuaternionFromEuler([0, 0, 0]))
+        id = p.loadURDF(os.path.join(self.base_asset_path, "fuel.urdf"),
+                        startPos, p.getQuaternionFromEuler([0, 0, 0]))
         p.changeDynamics(id,
                          -1,
                          lateralFriction=1.0,
