@@ -14,7 +14,7 @@ A 3D physics simulation of Fuel and the Hub for the 2026 FRC game Rebuilt.
 
 # Usage
 
-An example can be seen in `experiment_example.py`. The usage is also outlined below.
+An example can be seen in `experiment_example.py`. Running this script will run a simulation and output the results. Detailed usage is outlined below.
 
 ## Simulation Object
 
@@ -82,7 +82,7 @@ While we do not provide a direct function for generating a lot of fuel with rand
                     
 ## Running the Simulation
 
-After all the fuel has been added the simulation can be run with the following line. `hertz` defines how many simulation steps should happen per second. `realtime` determines if the simulation should be run in realtime (i.e. pausing between steps) or if it should be run as fast as possible.
+After all the fuel has been added the simulation can be run with the following line. `hertz` defines how many simulation steps should happen per second. `realtime` determines if the simulation should be run in realtime (i.e. pausing between steps) or if it should be run as fast as possible. This will run the simulation till 10 seconds after the last Fuel is spawned in.
 
 `sim.run(hertz=240, realtime=False)`
 
