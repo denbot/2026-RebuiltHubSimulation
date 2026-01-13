@@ -88,7 +88,7 @@ After all the fuel has been added the simulation can be run with the following l
 
 ## Generating output
 
-The results can be saved as follows. `save_paths` determines if the full path and velocities for each fuel should be saved. This produces a somewhat large file, so it is optional.
+The results can be saved as follows. `save_paths` determines if the full path and velocities for each fuel should be saved. This produces a somewhat large file, so it is optional. This will create a directory based on the `experiment_name` in which the files are saved. By default this is done in the current working directory.
 
 `sim.save_results(save_paths=False)`
 
