@@ -1,4 +1,4 @@
-# 2026-RebuiltHubSimulation
+# Fuel and Hub Simulation for the 2026 FRC Rebuilt Game
 
 A 3D physics simulation of Fuel and the Hub for the 2026 FRC game Rebuilt.
 
