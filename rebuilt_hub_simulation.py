@@ -112,6 +112,7 @@ class RebuiltHubSimuation:
         if not isinstance(starting_height, list):
             starting_height = [starting_height]
 
+        last_launch_time = start_time
         for i, (sd, sa, ty, tp, sv, sh) in enumerate(
                 itertools.product(starting_distance, starting_angle,
                                   target_yaw, target_pitch, starting_velocity,
@@ -126,6 +127,9 @@ class RebuiltHubSimuation:
                 starting_height=sh,
                 experiment_tag=experiment_tag,
             )
+            last_launch_time = start_time + i * time_interval
+
+        return last_launch_time
 
     def addFuel(
         self,
