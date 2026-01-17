@@ -28,9 +28,11 @@ class RebuiltHubSimuation:
     def __init__(self,
                  experiment_name: str = "experiment",
                  base_path: str = ".",
-                 show_gui: bool = True):
+                 show_gui: bool = True,
+                 fuel_lifetime: float = 10.0):
         self.base_path = base_path
         self.experiment_name = experiment_name
+        self.fuel_lifetime = fuel_lifetime
         self.base_asset_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "assets")
 
@@ -70,7 +72,12 @@ class RebuiltHubSimuation:
         p.changeDynamics(hub_id, -1, lateralFriction=1.0, restitution=1.0)
 
         self.fuel_defs = []
-        self.fuel_tracking = []
+
+        #We use a dictionary here instead of a list for faster removal when fuels expire
+        self.active_fuels = {}
+
+        #We never remove from inactive_fuels so we can just use a list
+        self.inactive_fuels = []
 
     def addAllFuelCombinations(self,
                                start_time=0.0,
@@ -200,7 +207,7 @@ class RebuiltHubSimuation:
             "velocities": [],
             "scored": False,
         }
-        self.fuel_tracking.append(fuel_data)
+        self.active_fuels[fuel.id] = fuel_data
 
     def did_score(self, fuel) -> bool:
         """Check if a fuel scored by checking its position
@@ -244,6 +251,21 @@ class RebuiltHubSimuation:
 
         return False
 
+    def calc_max_height(self, fuel: SimulationFuel) -> float:
+        """Calculate the maximum height reached by a fuel based on its parameters
+
+        Parameters:
+            fuel (SimulationFuel): The fuel to calculate for
+        Returns:
+            float: The maximum height reached (meters)
+        """
+
+        max_height = 0.0
+        for pos in fuel["positions"]:
+            if pos[2] > max_height:
+                max_height = pos[2]
+        return max_height
+
     def save_results(self, save_paths: bool = False):
         """Save the simulation results to files"""
 
@@ -263,15 +285,15 @@ class RebuiltHubSimuation:
         csv_filename = os.path.join(experiment_base_dir, "results.csv")
 
         # Define the fieldnames (CSV header) based on dataclass fields
-        fieldnames = [field.name
-                      for field in fields(SimulationFuel)] + ["scored"]
+        fieldnames = [field.name for field in fields(SimulationFuel)
+                      ] + ["scored", "max_height"]
 
         # Write to a CSV file
         with open(csv_filename, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
 
             writer.writeheader()
-            for fuel in self.fuel_tracking:
+            for fuel in self.inactive_fuels:
                 row_dict = asdict(fuel["definition"])
                 formatted_row = {}
                 for k, v in row_dict.items():
@@ -280,12 +302,13 @@ class RebuiltHubSimuation:
                     else:
                         formatted_row[k] = v
                 formatted_row["scored"] = fuel["scored"]
+                formatted_row["max_height"] = f"{fuel['max_height']:.5f}"
                 writer.writerow(formatted_row)
 
         #Save Positions, Velocities, and Simulation Times in JSON file
         if save_paths:
             json_output_dict = {}
-            for fuel in self.fuel_tracking:
+            for fuel in self.inactive_fuels:
                 json_output_dict[fuel["definition"].id] = {
                     "positions": fuel["positions"],
                     "velocities": fuel["velocities"],
@@ -326,6 +349,7 @@ class RebuiltHubSimuation:
         next_fuel_index = 0
         p.setTimeStep(1.0 / hertz)
         numSteps = int(simLength * hertz)
+
         for i in range(numSteps):
             curr_time = i * (1.0 / hertz)
 
@@ -340,7 +364,7 @@ class RebuiltHubSimuation:
             if realtime:
                 time.sleep(1.0 / hertz)
 
-            for fuel in self.fuel_tracking:
+            for fuel in self.active_fuels.values():
                 fuel_id = fuel["definition"].id
 
                 pos, orn = p.getBasePositionAndOrientation(fuel_id)
@@ -350,7 +374,32 @@ class RebuiltHubSimuation:
                 fuel["times"].append(curr_time)
                 fuel["velocities"].append(vel)
 
+            #Check once per second for fuels that have exceeded their lifetime
+            if i % hertz == 0:
+                #Gather the ids to remove first to avoid modifying the dictionary while iterating
+                to_remove = []
+                for fuel in self.active_fuels.values():
+                    fuel_id = fuel["definition"].id
+                    if curr_time - fuel[
+                            "definition"].starting_time > self.fuel_lifetime:
+                        to_remove.append(fuel_id)
+
+                #Remove the fuels that have exceeded their lifetime
+                for rid in to_remove:
+                    p.removeBody(rid)
+                    self.inactive_fuels.append(self.active_fuels[rid])
+                    del self.active_fuels[rid]
+
+            #Print progress every 5 seconds
+            if i % (hertz * 5) == 0:
+                print(
+                    f"Simulation time: {curr_time:.2f} seconds / {simLength:.2f} seconds"
+                )
+
         p.disconnect()
 
-        for fuel in self.fuel_tracking:
+        self.inactive_fuels.extend(self.active_fuels.values())
+        self.active_fuels = {}
+        for fuel in self.inactive_fuels:
             fuel["scored"] = self.did_score(fuel)
+            fuel["max_height"] = self.calc_max_height(fuel)

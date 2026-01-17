@@ -105,5 +105,4 @@ The primary motivation for this utility was to dial in the trajectories of the F
 
 # Limitiations
 
-- Currently fuel is never removed from the simulation. So if an experiment requires spawning in a lot of fuel (multiple hundreds?) then it might be worth spliting this into multiple runs. I have not really tested to see how far it can be pushed.
 - Currently it is not setup to allow you to set the spin of the Fuel. This is possible and actually not that difficult with pyBullet. But without an easy way to determine and match the friction coefficent of the actual Fuel the results would be somewhat suspect.
